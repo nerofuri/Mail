@@ -23,6 +23,7 @@ import {
   tokenFromRequest,
 } from './auth.js';
 import { seedDemoIfEmpty } from './demo-data.js';
+import { storageBackend } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -78,6 +79,11 @@ app.use(express.static(join(__dirname, 'public')));
 // --- Metadata -------------------------------------------------------------
 app.get('/api/meta', (_req, res) => {
   res.json({ carriers: CARRIERS, statuses: STATUSES });
+});
+
+// Health / storage backend check ("postgres" = persistent, "file" = ephemeral).
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true, storage: storageBackend() });
 });
 
 // Suggest a dummy tracking number for a given carrier (for testing).

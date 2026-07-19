@@ -135,9 +135,11 @@ function createFileStore() {
 }
 
 let impl;
+let backendName = 'file';
 if (DATABASE_URL) {
   try {
     impl = await createPostgres(DATABASE_URL);
+    backendName = 'postgres';
     console.log('[db] Using Postgres storage (persistent).');
   } catch (err) {
     // Don't take the whole site down over a bad/unreachable DATABASE_URL —
@@ -160,3 +162,4 @@ export const getAll = () => impl.getAll();
 export const get = (tn) => impl.get(tn);
 export const put = (pkg) => impl.put(pkg);
 export const del = (tn) => impl.del(tn);
+export const storageBackend = () => backendName;
