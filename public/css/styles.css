@@ -417,6 +417,25 @@ button.ghost {
   padding: 8px 2px;
 }
 
+/* Login */
+.login-wrap {
+  padding: 60px 0 90px;
+  display: flex;
+  justify-content: center;
+}
+.login-card {
+  width: min(420px, 100%);
+}
+.login-card h1 {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+}
+.login-card .lede {
+  margin-top: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 /* Footer */
 .site-footer {
   padding: 26px 0 40px;

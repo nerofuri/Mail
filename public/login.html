@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TrackWave — Admin Sign in</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+              <path d="M3 8l9-5 9 5v8l-9 5-9-5V8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M3 8l9 5 9-5M12 13v8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="brand-name">Track<b>Wave</b></span>
+        </a>
+        <nav class="nav">
+          <a href="/">Track</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container login-wrap">
+      <section class="card login-card">
+        <h1>Admin sign in</h1>
+        <p class="lede">Sign in to manage shipments and status updates.</p>
+        <form id="login-form" class="form" autocomplete="off">
+          <label>
+            Username
+            <input type="text" name="username" id="username" required autofocus />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" id="password" required />
+          </label>
+          <button type="submit">Sign in</button>
+          <p class="form-msg" id="login-msg"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          TrackWave is an independent demo tracking portal — not affiliated with
+          any real courier.
+        </p>
+      </div>
+    </footer>
+
+    <script src="/js/login.js"></script>
+  </body>
+</html>

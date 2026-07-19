@@ -12,6 +12,7 @@ const DATA_FILE = join(DATA_DIR, 'packages.json');
 // Supported carriers. These are used only to label demo shipments — this app
 // does NOT connect to any carrier's real systems.
 export const CARRIERS = [
+  'DHL',
   'FedEx',
   'UPS',
   'USPS',
@@ -73,6 +74,9 @@ export function generateTrackingNumber(carrier = 'Other') {
     ).join('');
 
   switch (carrier) {
+    case 'DHL':
+      // DHL Express air waybills are 10-digit numeric. Synthetic — test only.
+      return rnd(10);
     case 'FedEx':
       return rnd(12);
     case 'UPS':

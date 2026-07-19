@@ -10,6 +10,22 @@ const statusSel = document.getElementById('status');
 const updateStatusSel = document.getElementById('update-status');
 const listEl = document.getElementById('list');
 
+// Redirect to login if the server says we're not (or no longer) authenticated.
+function guard(res) {
+  if (res.status === 401) {
+    location.replace('/login.html');
+    throw new Error('Not authenticated.');
+  }
+  return res;
+}
+
+// Sign out.
+document.getElementById('logout-link').addEventListener('click', async (e) => {
+  e.preventDefault();
+  await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+  location.replace('/login.html');
+});
+
 const createForm = document.getElementById('create-form');
 const updateForm = document.getElementById('update-form');
 const createMsg = document.getElementById('create-msg');
@@ -35,7 +51,7 @@ async function loadMeta() {
 // Generate a dummy tracking number for the selected carrier.
 document.getElementById('gen-btn').addEventListener('click', async () => {
   const carrier = carrierSel.value;
-  const { trackingNumber } = await (
+  const { trackingNumber } = await guard(
     await fetch(`/api/tracking-number?carrier=${encodeURIComponent(carrier)}`)
   ).json();
   document.getElementById('trackingNumber').value = trackingNumber;
@@ -54,11 +70,13 @@ createForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const data = formData(createForm);
   try {
-    const res = await fetch('/api/packages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+    const res = guard(
+      await fetch('/api/packages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+    );
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || 'Failed to create shipment.');
     setMsg(createMsg, `Created ${body.trackingNumber}`, true);
@@ -77,13 +95,12 @@ updateForm.addEventListener('submit', async (e) => {
   const tn = data.trackingNumber;
   delete data.trackingNumber;
   try {
-    const res = await fetch(
-      `/api/packages/${encodeURIComponent(tn)}/events`,
-      {
+    const res = guard(
+      await fetch(`/api/packages/${encodeURIComponent(tn)}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      }
+      })
     );
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || 'Failed to update.');
@@ -96,7 +113,7 @@ updateForm.addEventListener('submit', async (e) => {
 
 // List + actions
 async function loadList() {
-  const packages = await (await fetch('/api/packages')).json();
+  const packages = await guard(await fetch('/api/packages')).json();
   if (!packages.length) {
     listEl.innerHTML = `<p class="empty">No shipments yet. Create one above.</p>`;
     return;
