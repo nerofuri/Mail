@@ -183,6 +183,43 @@ export async function addEvent(trackingNumber, update = {}) {
   return pkg;
 }
 
+// Delete a single event (status update) from a shipment by its index in the
+// stored events array. Recomputes the current status from the newest remaining
+// event. A shipment must always keep at least one event.
+export async function deleteEvent(trackingNumber, index) {
+  const db = await load();
+  const key = String(trackingNumber).toUpperCase();
+  const pkg = db[key];
+  if (!pkg) {
+    const err = new Error('Shipment not found.');
+    err.status = 404;
+    throw err;
+  }
+  if (!Number.isInteger(index) || index < 0 || index >= pkg.events.length) {
+    const err = new Error('Invalid update.');
+    err.status = 400;
+    throw err;
+  }
+  if (pkg.events.length <= 1) {
+    const err = new Error('A shipment must keep at least one update.');
+    err.status = 400;
+    throw err;
+  }
+
+  pkg.events.splice(index, 1);
+
+  // Recompute current status/updatedAt from the newest remaining event.
+  const newest = [...pkg.events].sort((a, b) =>
+    (b.timestamp || '').localeCompare(a.timestamp || '')
+  )[0];
+  pkg.status = newest.status;
+  pkg.updatedAt = newest.timestamp;
+
+  db[key] = pkg;
+  await persist();
+  return pkg;
+}
+
 export async function deletePackage(trackingNumber) {
   const db = await load();
   const key = String(trackingNumber).toUpperCase();

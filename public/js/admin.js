@@ -30,6 +30,15 @@ const createForm = document.getElementById('create-form');
 const updateForm = document.getElementById('update-form');
 const createMsg = document.getElementById('create-msg');
 const updateMsg = document.getElementById('update-msg');
+const updateTn = document.getElementById('update-tn');
+const eventsManage = document.getElementById('events-manage');
+
+const fmt = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+};
 
 function setMsg(el, text, ok) {
   el.textContent = text;
@@ -126,11 +135,83 @@ updateForm.addEventListener('submit', async (e) => {
       `Updated ${body.trackingNumber} → ${body.status}`,
       body.trackingNumber
     );
+    updateForm.querySelector('[name="location"]').value = '';
+    updateForm.querySelector('[name="note"]').value = '';
+    loadEvents(tn);
     loadList();
   } catch (err) {
     setMsg(updateMsg, err.message, false);
   }
 });
+
+// Show a shipment's existing updates (with a delete button on each).
+async function loadEvents(tn) {
+  tn = (tn || '').trim();
+  if (!tn) {
+    eventsManage.innerHTML = '';
+    return;
+  }
+  const res = await fetch(`/api/track/${encodeURIComponent(tn)}`);
+  if (res.status === 404) {
+    eventsManage.innerHTML = `<p class="empty">No shipment found for “${esc(tn)}”.</p>`;
+    return;
+  }
+  if (!res.ok) {
+    eventsManage.innerHTML = '';
+    return;
+  }
+  const pkg = await res.json();
+  // Keep original array index (used for deletion), display newest first.
+  const events = pkg.events
+    .map((e, i) => ({ ...e, _i: i }))
+    .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+
+  eventsManage.innerHTML = `
+    <h3 class="section-title">Updates for ${esc(pkg.trackingNumber)} (${events.length})</h3>
+    <ul class="ev-list">
+      ${events
+        .map(
+          (e) => `
+        <li class="ev-item">
+          <div class="ev-main">
+            <span class="ev-status">${esc(e.status)}</span>
+            <span class="ev-meta">${esc(fmt(e.timestamp))}${e.location ? ' · ' + esc(e.location) : ''}</span>
+            ${e.note ? `<span class="ev-note">${esc(e.note)}</span>` : ''}
+          </div>
+          <button class="ev-del" title="Delete this update"
+            data-del-ev="${e._i}" data-tn="${esc(pkg.trackingNumber)}"
+            ${events.length <= 1 ? 'disabled' : ''}>Delete</button>
+        </li>`
+        )
+        .join('')}
+    </ul>`;
+}
+
+// Delete a single update.
+eventsManage.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-del-ev]');
+  if (!btn) return;
+  const tn = btn.dataset.tn;
+  if (!confirm('Delete this update? This cannot be undone.')) return;
+  try {
+    const res = guard(
+      await fetch(
+        `/api/packages/${encodeURIComponent(tn)}/events/${btn.dataset.delEv}`,
+        { method: 'DELETE' }
+      )
+    );
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'Failed to delete update.');
+    setMsg(updateMsg, 'Update deleted.', true);
+    loadEvents(tn);
+    loadList();
+  } catch (err) {
+    setMsg(updateMsg, err.message, false);
+  }
+});
+
+// Auto-load a shipment's updates when the tracking number field changes.
+updateTn.addEventListener('change', () => loadEvents(updateTn.value));
 
 // List + actions
 async function loadList() {
@@ -163,7 +244,8 @@ listEl.addEventListener('click', async (e) => {
   if (btn.dataset.track) {
     openTracking(btn.dataset.track);
   } else if (btn.dataset.use) {
-    document.getElementById('update-tn').value = btn.dataset.use;
+    updateTn.value = btn.dataset.use;
+    loadEvents(btn.dataset.use);
     updateForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
   } else if (btn.dataset.del) {
     if (!confirm(`Delete ${btn.dataset.del}?`)) return;

@@ -865,6 +865,68 @@ button.ghost:hover {
   filter: brightness(1.06);
 }
 
+/* Manage updates */
+.events-manage:not(:empty) {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.ev-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ev-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.ev-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ev-status {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.ev-meta {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.ev-note {
+  color: var(--faint);
+  font-size: 0.82rem;
+}
+.ev-del {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 9px;
+  background: rgba(248, 113, 113, 0.08);
+  color: #fca5a5;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ev-del:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.18);
+}
+.ev-del:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Admin list */
 .list {
   display: flex;
