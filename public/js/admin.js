@@ -36,6 +36,23 @@ function setMsg(el, text, ok) {
   el.className = 'form-msg ' + (ok ? 'ok' : 'err');
 }
 
+// Success message with a link to open the shipment's tracking page.
+function setMsgWithLink(el, text, tn) {
+  el.className = 'form-msg ok';
+  el.innerHTML = `${esc(text)} · <a href="/?tn=${encodeURIComponent(tn)}" target="_blank" rel="noopener">View tracking →</a>`;
+}
+
+function openTracking(tn) {
+  if (tn) window.open(`/?tn=${encodeURIComponent(tn)}`, '_blank');
+}
+
+// Quick track: open any number's public tracking page in a new tab.
+document.getElementById('quick-track-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const tn = document.getElementById('quick-track-input').value.trim();
+  openTracking(tn);
+});
+
 async function loadMeta() {
   const { carriers, statuses } = await (await fetch('/api/meta')).json();
   carrierSel.innerHTML = carriers
@@ -79,7 +96,7 @@ createForm.addEventListener('submit', async (e) => {
     );
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || 'Failed to create shipment.');
-    setMsg(createMsg, `Created ${body.trackingNumber}`, true);
+    setMsgWithLink(createMsg, `Created ${body.trackingNumber}`, body.trackingNumber);
     createForm.reset();
     document.getElementById('update-tn').value = body.trackingNumber;
     loadList();
@@ -104,7 +121,11 @@ updateForm.addEventListener('submit', async (e) => {
     );
     const body = await res.json();
     if (!res.ok) throw new Error(body.error || 'Failed to update.');
-    setMsg(updateMsg, `Updated ${body.trackingNumber} → ${body.status}`, true);
+    setMsgWithLink(
+      updateMsg,
+      `Updated ${body.trackingNumber} → ${body.status}`,
+      body.trackingNumber
+    );
     loadList();
   } catch (err) {
     setMsg(updateMsg, err.message, false);
@@ -122,7 +143,7 @@ async function loadList() {
     .map(
       (p) => `
       <div class="list-item">
-        <span class="li-tn">${esc(p.trackingNumber)}</span>
+        <button class="li-tn" data-track="${esc(p.trackingNumber)}" title="Open tracking page">${esc(p.trackingNumber)}</button>
         <span class="li-carrier">${esc(p.carrier)}</span>
         <span class="li-desc">${esc(p.description || '—')} · ${esc(p.status)}</span>
         <span class="li-actions">
@@ -140,7 +161,7 @@ listEl.addEventListener('click', async (e) => {
   if (!btn) return;
 
   if (btn.dataset.track) {
-    window.open(`/?tn=${encodeURIComponent(btn.dataset.track)}`, '_blank');
+    openTracking(btn.dataset.track);
   } else if (btn.dataset.use) {
     document.getElementById('update-tn').value = btn.dataset.use;
     updateForm.scrollIntoView({ behavior: 'smooth', block: 'center' });

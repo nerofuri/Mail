@@ -823,6 +823,48 @@ button.ghost:hover {
   color: var(--err);
 }
 
+/* Quick track */
+.quick-track {
+  margin-bottom: 22px;
+}
+.quick-track-form {
+  display: flex;
+  gap: 12px;
+}
+.quick-track-form input {
+  flex: 1;
+  padding: 13px 15px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  font-size: 0.95rem;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.quick-track-form input::placeholder {
+  color: var(--faint);
+}
+.quick-track-form input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.14);
+}
+.quick-track-form button {
+  padding: 0 22px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: #05201d;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.12s, filter 0.2s;
+}
+.quick-track-form button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
 /* Admin list */
 .list {
   display: flex;
@@ -847,6 +889,16 @@ button.ghost:hover {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-weight: 700;
   color: var(--ink);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: color 0.15s;
+}
+.list-item .li-tn:hover {
+  color: var(--brand);
+  text-decoration: underline;
 }
 .list-item .li-carrier {
   color: var(--brand);
