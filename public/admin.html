@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TrackWave — Admin</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+              <path d="M3 8l9-5 9 5v8l-9 5-9-5V8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M3 8l9 5 9-5M12 13v8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="brand-name">Track<b>Wave</b></span>
+        </a>
+        <nav class="nav">
+          <a href="/">Track</a>
+          <a href="/admin.html" class="active">Admin</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container admin">
+      <p class="eyebrow">Admin panel</p>
+      <h1>Shipments</h1>
+      <p class="lede">
+        Create test shipments, generate dummy tracking numbers, and push status
+        updates.
+      </p>
+
+      <div class="admin-grid">
+        <!-- Create shipment -->
+        <section class="card">
+          <h2>Create a shipment</h2>
+          <form id="create-form" class="form">
+            <label>
+              Carrier
+              <select name="carrier" id="carrier"></select>
+            </label>
+
+            <label>
+              Tracking number
+              <div class="inline">
+                <input
+                  type="text"
+                  name="trackingNumber"
+                  id="trackingNumber"
+                  placeholder="Leave blank to auto-generate"
+                />
+                <button type="button" id="gen-btn" class="ghost">Generate</button>
+              </div>
+            </label>
+
+            <label>
+              Description
+              <input type="text" name="description" placeholder="e.g. Wireless headphones" />
+            </label>
+
+            <div class="row">
+              <label>
+                Origin
+                <input type="text" name="origin" placeholder="Shenzhen, CN" />
+              </label>
+              <label>
+                Destination
+                <input type="text" name="destination" placeholder="London, GB" />
+              </label>
+            </div>
+
+            <div class="row">
+              <label>
+                Recipient
+                <input type="text" name="recipient" placeholder="Name" />
+              </label>
+              <label>
+                Est. delivery
+                <input type="date" name="estimatedDelivery" />
+              </label>
+            </div>
+
+            <label>
+              Initial status
+              <select name="status" id="status"></select>
+            </label>
+
+            <button type="submit">Create shipment</button>
+            <p class="form-msg" id="create-msg"></p>
+          </form>
+        </section>
+
+        <!-- Update status -->
+        <section class="card">
+          <h2>Update status</h2>
+          <form id="update-form" class="form">
+            <label>
+              Tracking number
+              <input
+                type="text"
+                name="trackingNumber"
+                id="update-tn"
+                placeholder="Which shipment?"
+                required
+              />
+            </label>
+
+            <label>
+              New status
+              <select name="status" id="update-status"></select>
+            </label>
+
+            <label>
+              Location
+              <input type="text" name="location" placeholder="e.g. Leipzig, DE" />
+            </label>
+
+            <label>
+              Note
+              <input type="text" name="note" placeholder="Optional detail" />
+            </label>
+
+            <label>
+              Update est. delivery (optional)
+              <input type="date" name="estimatedDelivery" />
+            </label>
+
+            <button type="submit">Add update</button>
+            <p class="form-msg" id="update-msg"></p>
+          </form>
+        </section>
+      </div>
+
+      <!-- Existing shipments -->
+      <section class="card">
+        <div class="card-head">
+          <h2>All shipments</h2>
+          <button type="button" id="refresh-btn" class="ghost">Refresh</button>
+        </div>
+        <div id="list" class="list"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          TrackWave is an independent demo tracking portal — not affiliated with
+          any real courier. Data lives in a local JSON file for testing.
+        </p>
+      </div>
+    </footer>
+
+    <script src="/js/admin.js"></script>
+  </body>
+</html>

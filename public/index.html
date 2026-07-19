@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TrackWave — Track Your Shipment</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+              <path d="M3 8l9-5 9 5v8l-9 5-9-5V8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M3 8l9 5 9-5M12 13v8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="brand-name">Track<b>Wave</b></span>
+        </a>
+        <nav class="nav">
+          <a href="/">Track</a>
+          <a href="/admin.html">Admin</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container">
+          <p class="eyebrow">Multi-carrier tracking</p>
+          <h1>Track your package, anywhere in the world</h1>
+          <p class="lede">
+            One place to follow shipments from FedEx, UPS, USPS, Amazon,
+            AliExpress, eBay and more.
+          </p>
+
+          <form id="track-form" class="track-form" autocomplete="off">
+            <input
+              id="track-input"
+              type="text"
+              name="trackingNumber"
+              placeholder="Enter a tracking number"
+              aria-label="Tracking number"
+              required
+            />
+            <button type="submit">Track</button>
+          </form>
+          <p class="hint" id="hint">
+            No number yet? Head to the
+            <a href="/admin.html">Admin panel</a> to create a test shipment.
+          </p>
+        </div>
+      </section>
+
+      <section class="container result-wrap">
+        <div id="result" class="result" hidden></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          TrackWave is an independent demo tracking portal. It is not
+          affiliated with, endorsed by, or a clone of any real courier. Tracking
+          numbers generated here are synthetic and for testing only.
+        </p>
+      </div>
+    </footer>
+
+    <script src="/js/track.js"></script>
+  </body>
+</html>

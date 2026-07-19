@@ -1,0 +1,23 @@
+{
+  "name": "trackwave",
+  "version": "1.0.0",
+  "description": "TrackWave — a multi-carrier package tracking portal (FedEx, Amazon, AliExpress, eBay, and more) with a public tracking page and an admin panel for creating and updating shipments.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node seed.js"
+  },
+  "keywords": [
+    "tracking",
+    "shipping",
+    "logistics",
+    "parcel",
+    "courier"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
