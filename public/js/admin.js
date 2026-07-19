@@ -73,6 +73,29 @@ function setMsg(el, text, ok) {
   el.className = 'form-msg ' + (ok ? 'ok' : 'err');
 }
 
+// Inline two-click confirmation (no native confirm() dialog, which some
+// browsers suppress after repeated prompts). First click arms the button
+// ("Confirm?"), a second click within 3s confirms.
+function armConfirm(btn) {
+  if (btn._armed) {
+    clearTimeout(btn._t);
+    btn._armed = false;
+    btn.textContent = btn._label;
+    btn.classList.remove('confirming');
+    return true;
+  }
+  btn._label = btn.textContent;
+  btn._armed = true;
+  btn.textContent = 'Confirm?';
+  btn.classList.add('confirming');
+  btn._t = setTimeout(() => {
+    btn._armed = false;
+    btn.textContent = btn._label;
+    btn.classList.remove('confirming');
+  }, 3000);
+  return false;
+}
+
 // Success message with a link to open the shipment's tracking page.
 function setMsgWithLink(el, text, tn) {
   el.className = 'form-msg ok';
@@ -195,12 +218,6 @@ async function simulate(tn) {
     setMsg(updateMsg, 'Enter a tracking number first.', false);
     return;
   }
-  if (
-    !confirm(
-      `Simulate a full delivery for ${tn}?\n\nThis replaces its history with a complete journey ending "Delivered".`
-    )
-  )
-    return;
   try {
     const res = guard(
       await fetch(`/api/packages/${encodeURIComponent(tn)}/simulate`, {
@@ -219,7 +236,14 @@ async function simulate(tn) {
   }
 }
 
-simulateBtn.addEventListener('click', () => simulate(updateTn.value));
+simulateBtn.addEventListener('click', () => {
+  if (!updateTn.value.trim()) {
+    setMsg(updateMsg, 'Enter a tracking number first.', false);
+    return;
+  }
+  if (!armConfirm(simulateBtn)) return; // first click arms, second simulates
+  simulate(updateTn.value);
+});
 
 // Show a shipment's existing updates (with a delete button on each).
 async function loadEvents(tn) {
@@ -295,8 +319,8 @@ eventsManage.addEventListener('click', async (e) => {
   }
   const btn = e.target.closest('button[data-del-ev]');
   if (!btn) return;
+  if (!armConfirm(btn)) return; // first click arms, second click deletes
   const tn = btn.dataset.tn;
-  if (!confirm('Delete this update? This cannot be undone.')) return;
   try {
     const res = guard(
       await fetch(
@@ -371,13 +395,24 @@ listEl.addEventListener('click', async (e) => {
     loadEvents(btn.dataset.use);
     updateForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
   } else if (btn.dataset.sim) {
+    if (!armConfirm(btn)) return;
     simulate(btn.dataset.sim);
   } else if (btn.dataset.del) {
-    if (!confirm(`Delete ${btn.dataset.del}?`)) return;
-    await fetch(`/api/packages/${encodeURIComponent(btn.dataset.del)}`, {
-      method: 'DELETE',
-    });
-    loadList();
+    if (!armConfirm(btn)) return;
+    try {
+      const res = guard(
+        await fetch(`/api/packages/${encodeURIComponent(btn.dataset.del)}`, {
+          method: 'DELETE',
+        })
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to delete shipment.');
+      }
+      loadList();
+    } catch (err) {
+      setMsg(updateMsg, err.message, false);
+    }
   }
 });
 

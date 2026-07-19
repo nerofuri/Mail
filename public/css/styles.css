@@ -865,6 +865,14 @@ button.ghost:hover {
   filter: brightness(1.06);
 }
 
+/* Inline "click again to confirm" state */
+.confirming {
+  background: var(--err) !important;
+  color: #fff !important;
+  border-color: var(--err) !important;
+  opacity: 1 !important;
+}
+
 /* Form actions row */
 .form-actions {
   display: flex;
