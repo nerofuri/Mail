@@ -56,7 +56,7 @@ const toLocalInput = (iso) => {
   )}:${pad(d.getMinutes())}`;
 };
 
-let managedPkg = null; // shipment currently shown in the manage list
+let shownTn = null; // tracking number currently rendered in the manage list
 let editIndex = null; // index of the event being edited, or null for "add"
 
 function exitEditMode() {
@@ -238,7 +238,7 @@ async function loadEvents(tn) {
     return;
   }
   const pkg = await res.json();
-  managedPkg = pkg;
+  shownTn = pkg.trackingNumber;
   // Keep original array index (used for edit/delete), display newest first.
   const events = pkg.events
     .map((e, i) => ({ ...e, _i: i }))
@@ -257,9 +257,11 @@ async function loadEvents(tn) {
             ${e.note ? `<span class="ev-note">${esc(e.note)}</span>` : ''}
           </div>
           <span class="ev-actions">
-            <button class="ev-edit" title="Edit this update"
-              data-edit-ev="${e._i}" data-tn="${esc(pkg.trackingNumber)}">Edit</button>
-            <button class="ev-del" title="Delete this update"
+            <button type="button" class="ev-edit" title="Edit this update"
+              data-edit-ev="${e._i}" data-tn="${esc(pkg.trackingNumber)}"
+              data-status="${esc(e.status)}" data-location="${esc(e.location || '')}"
+              data-note="${esc(e.note || '')}" data-time="${esc(e.timestamp || '')}">Edit</button>
+            <button type="button" class="ev-del" title="Delete this update"
               data-del-ev="${e._i}" data-tn="${esc(pkg.trackingNumber)}"
               ${events.length <= 1 ? 'disabled' : ''}>Delete</button>
           </span>
@@ -269,19 +271,18 @@ async function loadEvents(tn) {
     </ul>`;
 }
 
-// Load an existing event into the form for editing.
-function startEdit(tn, index) {
-  if (!managedPkg || managedPkg.trackingNumber !== tn) return;
-  const ev = managedPkg.events[index];
-  if (!ev) return;
-  updateTn.value = tn;
-  updateStatusSel.value = ev.status;
-  updateForm.querySelector('[name="location"]').value = ev.location || '';
-  updateForm.querySelector('[name="note"]').value = ev.note || '';
-  updateTime.value = toLocalInput(ev.timestamp);
-  editIndex = index;
+// Load an existing event into the form for editing. Reads the event's data
+// straight off the button, so it never depends on stale in-memory state.
+function startEdit(btn) {
+  updateTn.value = btn.dataset.tn;
+  updateStatusSel.value = btn.dataset.status;
+  updateForm.querySelector('[name="location"]').value = btn.dataset.location || '';
+  updateForm.querySelector('[name="note"]').value = btn.dataset.note || '';
+  updateTime.value = toLocalInput(btn.dataset.time || undefined);
+  editIndex = Number.parseInt(btn.dataset.editEv, 10);
   updateSubmit.textContent = 'Save changes';
   editCancel.hidden = false;
+  setMsg(updateMsg, 'Editing an existing update — change fields and Save.', true);
   updateForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -289,7 +290,7 @@ function startEdit(tn, index) {
 eventsManage.addEventListener('click', async (e) => {
   const editBtn = e.target.closest('button[data-edit-ev]');
   if (editBtn) {
-    startEdit(editBtn.dataset.tn, Number.parseInt(editBtn.dataset.editEv, 10));
+    startEdit(editBtn);
     return;
   }
   const btn = e.target.closest('button[data-del-ev]');
@@ -313,10 +314,24 @@ eventsManage.addEventListener('click', async (e) => {
   }
 });
 
-// Auto-load a shipment's updates when the tracking number field changes.
-updateTn.addEventListener('change', () => {
+// Auto-load a shipment's updates when the tracking number field changes — but
+// NOT if it already shows that shipment, so clicking Edit/Delete (which blurs
+// this field) never rebuilds the list out from under the click.
+function maybeLoadEvents() {
+  const tn = updateTn.value.trim().toUpperCase();
+  if (tn && tn === shownTn) return;
   if (editIndex !== null) exitEditMode();
   loadEvents(updateTn.value);
+}
+updateTn.addEventListener('change', maybeLoadEvents);
+
+// Enter in the tracking-number field should load the shipment, not submit the
+// form (which would add an unintended update).
+updateTn.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    maybeLoadEvents();
+  }
 });
 
 // List + actions
