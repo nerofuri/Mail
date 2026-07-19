@@ -1,0 +1,19 @@
+# Render Blueprint. In the Render dashboard: New → Blueprint → point at this
+# repo/branch. Render reads this file and provisions the service.
+services:
+  - type: web
+    name: trackwave
+    runtime: node
+    plan: free
+    branch: claude/package-tracking-website-oavbhm
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_USER
+        value: admin
+      # Render generates a strong random value; view it under the service's
+      # "Environment" tab to sign in to the admin panel.
+      - key: ADMIN_PASSWORD
+        generateValue: true

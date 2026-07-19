@@ -84,6 +84,38 @@ You can also deep-link a shipment: `http://localhost:3000/?tn=YOURNUMBER`.
 
 Routes marked ✅ require the admin session cookie.
 
+## Deploy it online (demo)
+
+This is a stateful Node server, so use a host that runs a long-lived process.
+
+### Render (recommended, one-click)
+
+1. Push this repo to GitHub (already done for the working branch).
+2. In Render: **New → Blueprint**, point it at this repo/branch. It reads
+   `render.yaml` and provisions a free web service.
+3. Render auto-generates `ADMIN_PASSWORD` — find it under the service's
+   **Environment** tab to sign in at `/admin.html`.
+4. Open your `https://<name>.onrender.com/` URL. On first boot the server
+   seeds a demo shipment with a **fixed** tracking number so
+   `/?tn=2707796596` works immediately.
+
+Notes on the free tier: the service sleeps when idle and has no persistent
+disk, so `data/packages.json` resets on redeploy — but the demo shipment
+re-seeds automatically on each fresh start, so the demo number keeps working.
+For durable data, use a paid disk or move to a host with volumes (Railway,
+Fly.io) and swap the JSON store for SQLite.
+
+### Railway / Fly.io
+
+Both auto-detect a Node app — no config file needed. Just set the env vars
+(`NODE_ENV=production`, `ADMIN_USER`, `ADMIN_PASSWORD`) and deploy.
+
+### Security when hosted
+
+- Always set a strong `ADMIN_PASSWORD` (the blueprint generates one for you).
+- With `NODE_ENV=production` the session cookie is flagged `Secure` and the app
+  trusts the platform's HTTPS proxy, so sign-in only works over HTTPS.
+
 ## Statuses
 
 `Label Created` · `Picked Up` · `In Transit` · `Arrived at Facility` ·

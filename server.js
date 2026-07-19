@@ -19,10 +19,17 @@ import {
   isValidToken,
   tokenFromRequest,
 } from './auth.js';
+import { seedDemoIfEmpty } from './demo-data.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// When hosted behind a platform's HTTPS proxy (Render, Railway, Fly, etc.),
+// trust it so secure cookies work.
+const SECURE_COOKIES =
+  process.env.NODE_ENV === 'production' || process.env.SECURE_COOKIES === 'true';
+if (SECURE_COOKIES) app.set('trust proxy', 1);
 
 app.use(express.json());
 
@@ -47,6 +54,7 @@ app.post('/api/login', (req, res) => {
   res.cookie(COOKIE, token, {
     httpOnly: true,
     sameSite: 'strict',
+    secure: SECURE_COOKIES,
     maxAge: 1000 * 60 * 60 * 8,
   });
   res.json({ ok: true });
@@ -123,6 +131,9 @@ app.delete('/api/packages/:trackingNumber', requireAuth, async (req, res) => {
   }
 });
 
+// Seed a demo shipment on an empty store (fresh deploys), then start listening.
+await seedDemoIfEmpty();
+
 app.listen(PORT, () => {
-  console.log(`TrackWave running at http://localhost:${PORT}`);
+  console.log(`TrackWave running on port ${PORT}`);
 });
