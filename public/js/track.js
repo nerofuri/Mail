@@ -7,6 +7,8 @@ const btn = document.getElementById('track-btn');
 // Journey stages for the progress stepper.
 const STEP_LABELS = ['Shipped', 'In Transit', 'Arriving', 'Delivered'];
 const STAGE = {
+  'Label generated': { step: 0, pct: 8 },
+  'Awaiting flight': { step: 0, pct: 30 },
   'Label Created': { step: 0, pct: 8 },
   'Picked Up': { step: 0, pct: 22 },
   'In Transit': { step: 1, pct: 45 },
