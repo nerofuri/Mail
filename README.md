@@ -99,11 +99,23 @@ This is a stateful Node server, so use a host that runs a long-lived process.
    seeds a demo shipment with a **fixed** tracking number so
    `/?tn=2707796596` works immediately.
 
-Notes on the free tier: the service sleeps when idle and has no persistent
-disk, so `data/packages.json` resets on redeploy — but the demo shipment
-re-seeds automatically on each fresh start, so the demo number keeps working.
-For durable data, use a paid disk or move to a host with volumes (Railway,
-Fly.io) and swap the JSON store for SQLite.
+### Persistent storage (keep edits across restarts)
+
+By default data is stored in `data/packages.json`, which is **ephemeral** on
+hosts like Render's free tier — it resets whenever the container restarts, so
+edits don't stick. To make data permanent, point the app at a free cloud
+Postgres:
+
+1. Create a free database at **[Neon](https://neon.tech)** (or Supabase). Copy
+   its connection string — it looks like
+   `postgresql://user:pass@host/dbname?sslmode=require`.
+2. In Render → your service → **Environment**, add a variable
+   **`DATABASE_URL`** set to that connection string. Save (it redeploys).
+3. On boot the app creates a `packages` table and stores everything there.
+   Now edits survive restarts and redeploys.
+
+Locally, if `DATABASE_URL` is unset the app just uses the JSON file — no
+database needed for development.
 
 ### Railway / Fly.io
 

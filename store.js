@@ -1,13 +1,6 @@
-// Simple file-backed JSON store for shipments.
-// Not a real database — good enough for a demo/test tracking portal.
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, 'data');
-const DATA_FILE = join(DATA_DIR, 'packages.json');
+// Shipment store. Business logic lives here; persistence is delegated to db.js
+// (Postgres when DATABASE_URL is set, otherwise a local JSON file).
+import { getAll, get, put, del } from './db.js';
 
 // Supported carriers. These are used only to label demo shipments — this app
 // does NOT connect to any carrier's real systems.
@@ -37,28 +30,17 @@ export const STATUSES = [
   'Returned to Sender',
 ];
 
-let cache = null;
+const key = (tn) => String(tn).toUpperCase();
+const nowISO = () => new Date().toISOString();
 
-async function ensureFile() {
-  if (!existsSync(DATA_DIR)) await mkdir(DATA_DIR, { recursive: true });
-  if (!existsSync(DATA_FILE)) await writeFile(DATA_FILE, '{}\n', 'utf8');
-}
+// Newest event by timestamp (used to derive the current status).
+const newestEvent = (events) =>
+  [...events].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))[0];
 
-async function load() {
-  if (cache) return cache;
-  await ensureFile();
-  try {
-    const raw = await readFile(DATA_FILE, 'utf8');
-    cache = JSON.parse(raw || '{}');
-  } catch {
-    cache = {};
-  }
-  return cache;
-}
-
-async function persist() {
-  await ensureFile();
-  await writeFile(DATA_FILE, JSON.stringify(cache, null, 2) + '\n', 'utf8');
+function notFound() {
+  const err = new Error('Shipment not found.');
+  err.status = 404;
+  return err;
 }
 
 // Generate a dummy tracking number for a carrier. Purely synthetic — these are
@@ -97,29 +79,21 @@ export function generateTrackingNumber(carrier = 'Other') {
   }
 }
 
-function nowISO() {
-  return new Date().toISOString();
-}
-
 export async function listPackages() {
-  const db = await load();
-  return Object.values(db).sort((a, b) =>
-    (b.updatedAt || '').localeCompare(a.updatedAt || '')
-  );
+  const all = await getAll();
+  return all.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
 }
 
 export async function getPackage(trackingNumber) {
-  const db = await load();
-  return db[String(trackingNumber).toUpperCase()] || null;
+  return get(key(trackingNumber));
 }
 
 export async function createPackage(input = {}) {
-  const db = await load();
   const carrier = CARRIERS.includes(input.carrier) ? input.carrier : 'Other';
 
   let trackingNumber = (input.trackingNumber || '').trim().toUpperCase();
   if (!trackingNumber) trackingNumber = generateTrackingNumber(carrier);
-  if (db[trackingNumber]) {
+  if (await get(trackingNumber)) {
     const err = new Error('A shipment with that tracking number already exists.');
     err.status = 409;
     throw err;
@@ -150,20 +124,13 @@ export async function createPackage(input = {}) {
     ],
   };
 
-  db[trackingNumber] = pkg;
-  await persist();
+  await put(pkg);
   return pkg;
 }
 
 export async function addEvent(trackingNumber, update = {}) {
-  const db = await load();
-  const key = String(trackingNumber).toUpperCase();
-  const pkg = db[key];
-  if (!pkg) {
-    const err = new Error('Shipment not found.');
-    err.status = 404;
-    throw err;
-  }
+  const pkg = await get(key(trackingNumber));
+  if (!pkg) throw notFound();
 
   const status = STATUSES.includes(update.status) ? update.status : pkg.status;
   const ts = update.timestamp || nowISO();
@@ -176,15 +143,12 @@ export async function addEvent(trackingNumber, update = {}) {
   });
   // Current status reflects the newest event by time (so a backdated add
   // doesn't clobber a more recent status).
-  const newest = [...pkg.events].sort((a, b) =>
-    (b.timestamp || '').localeCompare(a.timestamp || '')
-  )[0];
+  const newest = newestEvent(pkg.events);
   pkg.status = newest.status;
   pkg.updatedAt = newest.timestamp;
   if (update.estimatedDelivery) pkg.estimatedDelivery = update.estimatedDelivery;
 
-  db[key] = pkg;
-  await persist();
+  await put(pkg);
   return pkg;
 }
 
@@ -192,14 +156,8 @@ export async function addEvent(trackingNumber, update = {}) {
 // stored events array. Recomputes the current status from the newest remaining
 // event. A shipment must always keep at least one event.
 export async function deleteEvent(trackingNumber, index) {
-  const db = await load();
-  const key = String(trackingNumber).toUpperCase();
-  const pkg = db[key];
-  if (!pkg) {
-    const err = new Error('Shipment not found.');
-    err.status = 404;
-    throw err;
-  }
+  const pkg = await get(key(trackingNumber));
+  if (!pkg) throw notFound();
   if (!Number.isInteger(index) || index < 0 || index >= pkg.events.length) {
     const err = new Error('Invalid update.');
     err.status = 400;
@@ -212,30 +170,19 @@ export async function deleteEvent(trackingNumber, index) {
   }
 
   pkg.events.splice(index, 1);
-
-  // Recompute current status/updatedAt from the newest remaining event.
-  const newest = [...pkg.events].sort((a, b) =>
-    (b.timestamp || '').localeCompare(a.timestamp || '')
-  )[0];
+  const newest = newestEvent(pkg.events);
   pkg.status = newest.status;
   pkg.updatedAt = newest.timestamp;
 
-  db[key] = pkg;
-  await persist();
+  await put(pkg);
   return pkg;
 }
 
 // Edit an existing event (status / location / note / timestamp) by index, then
 // recompute the shipment's current status from the newest remaining event.
 export async function updateEvent(trackingNumber, index, patch = {}) {
-  const db = await load();
-  const key = String(trackingNumber).toUpperCase();
-  const pkg = db[key];
-  if (!pkg) {
-    const err = new Error('Shipment not found.');
-    err.status = 404;
-    throw err;
-  }
+  const pkg = await get(key(trackingNumber));
+  if (!pkg) throw notFound();
   if (!Number.isInteger(index) || index < 0 || index >= pkg.events.length) {
     const err = new Error('Invalid update.');
     err.status = 400;
@@ -248,32 +195,22 @@ export async function updateEvent(trackingNumber, index, patch = {}) {
   if (patch.note !== undefined) ev.note = patch.note;
   if (patch.timestamp) ev.timestamp = patch.timestamp;
 
-  const newest = [...pkg.events].sort((a, b) =>
-    (b.timestamp || '').localeCompare(a.timestamp || '')
-  )[0];
+  const newest = newestEvent(pkg.events);
   pkg.status = newest.status;
   pkg.updatedAt = newest.timestamp;
 
-  db[key] = pkg;
-  await persist();
+  await put(pkg);
   return pkg;
 }
 
 // Replace a shipment's history with a full, realistic simulated journey that
 // ends "Delivered". Locations come from the shipment's own origin/destination.
 export async function simulateDelivery(trackingNumber) {
-  const db = await load();
-  const key = String(trackingNumber).toUpperCase();
-  const pkg = db[key];
-  if (!pkg) {
-    const err = new Error('Shipment not found.');
-    err.status = 404;
-    throw err;
-  }
+  const pkg = await get(key(trackingNumber));
+  if (!pkg) throw notFound();
 
   const origin = pkg.origin || 'Origin facility';
   const dest = pkg.destination || 'Destination';
-  // Short, readable destination label (first city-ish segment).
   const destShort = dest.split(',')[0].trim() || dest;
   const country = (s) => (s.split(',').pop() || '').trim().toLowerCase();
   const intl = country(origin) && country(dest) && country(origin) !== country(dest);
@@ -300,16 +237,10 @@ export async function simulateDelivery(trackingNumber) {
   pkg.status = 'Delivered';
   pkg.updatedAt = pkg.events[pkg.events.length - 1].timestamp;
 
-  db[key] = pkg;
-  await persist();
+  await put(pkg);
   return pkg;
 }
 
 export async function deletePackage(trackingNumber) {
-  const db = await load();
-  const key = String(trackingNumber).toUpperCase();
-  if (!db[key]) return false;
-  delete db[key];
-  await persist();
-  return true;
+  return del(key(trackingNumber));
 }

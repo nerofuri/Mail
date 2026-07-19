@@ -17,3 +17,8 @@ services:
       # "Environment" tab to sign in to the admin panel.
       - key: ADMIN_PASSWORD
         generateValue: true
+      # Persistent storage. Paste your Neon/Supabase Postgres connection string
+      # here in the Render dashboard (Environment tab). Without it, data is
+      # stored in an ephemeral file that resets on restart.
+      - key: DATABASE_URL
+        sync: false
