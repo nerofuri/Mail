@@ -218,15 +218,6 @@ form.addEventListener('submit', (e) => {
   }
 });
 
-// Sample-number chip.
-document.querySelectorAll('.sample-chip').forEach((chip) => {
-  chip.addEventListener('click', () => {
-    input.value = chip.dataset.tn;
-    history.replaceState(null, '', `?tn=${encodeURIComponent(chip.dataset.tn)}`);
-    track(chip.dataset.tn);
-  });
-});
-
 // Deep link: /?tn=XXXX
 const params = new URLSearchParams(location.search);
 const initial = params.get('tn');
