@@ -5,17 +5,17 @@ const extras = document.getElementById('extras');
 const btn = document.getElementById('track-btn');
 
 // Journey stages for the progress stepper.
-const STEP_LABELS = ['Ordered', 'Shipped', 'In Transit', 'Arriving', 'Delivered'];
+const STEP_LABELS = ['Shipped', 'In Transit', 'Arriving', 'Delivered'];
 const STAGE = {
-  'Label Created': { step: 0, pct: 6 },
-  'Picked Up': { step: 1, pct: 24 },
-  'In Transit': { step: 2, pct: 48 },
-  'Customs Clearance': { step: 2, pct: 58 },
-  'Arrived at Facility': { step: 3, pct: 68 },
-  'Out for Delivery': { step: 3, pct: 88 },
-  'Delivered': { step: 4, pct: 100 },
-  'Exception': { step: 2, pct: 48, alert: true },
-  'Returned to Sender': { step: 1, pct: 20, alert: true },
+  'Label Created': { step: 0, pct: 8 },
+  'Picked Up': { step: 0, pct: 22 },
+  'In Transit': { step: 1, pct: 45 },
+  'Customs Clearance': { step: 1, pct: 58 },
+  'Arrived at Facility': { step: 2, pct: 70 },
+  'Out for Delivery': { step: 2, pct: 90 },
+  'Delivered': { step: 3, pct: 100 },
+  'Exception': { step: 1, pct: 45, alert: true },
+  'Returned to Sender': { step: 0, pct: 20, alert: true },
 };
 
 const statusClass = (status) => {
