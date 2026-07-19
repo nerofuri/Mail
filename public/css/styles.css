@@ -865,6 +865,42 @@ button.ghost:hover {
   filter: brightness(1.06);
 }
 
+/* Form actions row */
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 4px;
+}
+.form-actions button[type="submit"] {
+  margin-top: 0;
+}
+.form-actions .ghost {
+  padding: 12px 16px;
+}
+
+.ev-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.ev-edit {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ev-edit:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
 /* Manage updates */
 .events-manage:not(:empty) {
   margin-top: 20px;

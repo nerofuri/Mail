@@ -8,7 +8,9 @@ import {
   getPackage,
   createPackage,
   addEvent,
+  updateEvent,
   deleteEvent,
+  simulateDelivery,
   deletePackage,
   generateTrackingNumber,
 } from './store.js';
@@ -121,6 +123,33 @@ app.post('/api/packages/:trackingNumber/events', requireAuth, async (req, res) =
     res.status(err.status || 500).json({ error: err.message });
   }
 });
+
+app.patch(
+  '/api/packages/:trackingNumber/events/:index',
+  requireAuth,
+  async (req, res) => {
+    try {
+      const idx = Number.parseInt(req.params.index, 10);
+      const pkg = await updateEvent(req.params.trackingNumber, idx, req.body || {});
+      res.json(pkg);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message });
+    }
+  }
+);
+
+app.post(
+  '/api/packages/:trackingNumber/simulate',
+  requireAuth,
+  async (req, res) => {
+    try {
+      const pkg = await simulateDelivery(req.params.trackingNumber);
+      res.json(pkg);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message });
+    }
+  }
+);
 
 app.delete(
   '/api/packages/:trackingNumber/events/:index',

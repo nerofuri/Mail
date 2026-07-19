@@ -33,12 +33,40 @@ const updateMsg = document.getElementById('update-msg');
 const updateTn = document.getElementById('update-tn');
 const eventsManage = document.getElementById('events-manage');
 
+const updateSubmit = document.getElementById('update-submit');
+const editCancel = document.getElementById('edit-cancel');
+const updateTime = document.getElementById('update-time');
+const simulateBtn = document.getElementById('simulate-btn');
+
 const fmt = (iso) => {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 };
+
+// Convert an ISO string to the value a <input type="datetime-local"> expects
+// (local time, no seconds).
+const pad = (n) => String(n).padStart(2, '0');
+const toLocalInput = (iso) => {
+  const d = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}`;
+};
+
+let managedPkg = null; // shipment currently shown in the manage list
+let editIndex = null; // index of the event being edited, or null for "add"
+
+function exitEditMode() {
+  editIndex = null;
+  updateSubmit.textContent = 'Add update';
+  editCancel.hidden = true;
+  updateForm.querySelector('[name="location"]').value = '';
+  updateForm.querySelector('[name="note"]').value = '';
+  updateTime.value = toLocalInput();
+}
 
 function setMsg(el, text, ok) {
   el.textContent = text;
@@ -114,35 +142,84 @@ createForm.addEventListener('submit', async (e) => {
   }
 });
 
-// Update status
+// Add a new update, or save edits to an existing one.
 updateForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const data = formData(updateForm);
   const tn = data.trackingNumber;
   delete data.trackingNumber;
+  // Convert the local date/time to ISO (or drop it to default to "now").
+  if (data.timestamp) data.timestamp = new Date(data.timestamp).toISOString();
+  else delete data.timestamp;
+  if (!data.estimatedDelivery) delete data.estimatedDelivery;
+
+  const editing = editIndex !== null;
+  const url = editing
+    ? `/api/packages/${encodeURIComponent(tn)}/events/${editIndex}`
+    : `/api/packages/${encodeURIComponent(tn)}/events`;
+
   try {
     const res = guard(
-      await fetch(`/api/packages/${encodeURIComponent(tn)}/events`, {
-        method: 'POST',
+      await fetch(url, {
+        method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
     );
     const body = await res.json();
-    if (!res.ok) throw new Error(body.error || 'Failed to update.');
+    if (!res.ok) throw new Error(body.error || 'Failed to save update.');
     setMsgWithLink(
       updateMsg,
-      `Updated ${body.trackingNumber} → ${body.status}`,
+      editing
+        ? `Saved changes to ${body.trackingNumber}`
+        : `Updated ${body.trackingNumber} → ${body.status}`,
       body.trackingNumber
     );
-    updateForm.querySelector('[name="location"]').value = '';
-    updateForm.querySelector('[name="note"]').value = '';
+    exitEditMode();
     loadEvents(tn);
     loadList();
   } catch (err) {
     setMsg(updateMsg, err.message, false);
   }
 });
+
+editCancel.addEventListener('click', () => {
+  exitEditMode();
+  setMsg(updateMsg, '', true);
+});
+
+// Simulate a full delivery for the tracking number in the update field.
+async function simulate(tn) {
+  tn = (tn || '').trim();
+  if (!tn) {
+    setMsg(updateMsg, 'Enter a tracking number first.', false);
+    return;
+  }
+  if (
+    !confirm(
+      `Simulate a full delivery for ${tn}?\n\nThis replaces its history with a complete journey ending "Delivered".`
+    )
+  )
+    return;
+  try {
+    const res = guard(
+      await fetch(`/api/packages/${encodeURIComponent(tn)}/simulate`, {
+        method: 'POST',
+      })
+    );
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'Failed to simulate delivery.');
+    setMsgWithLink(updateMsg, `Simulated delivery for ${tn}`, tn);
+    exitEditMode();
+    updateTn.value = tn;
+    loadEvents(tn);
+    loadList();
+  } catch (err) {
+    setMsg(updateMsg, err.message, false);
+  }
+}
+
+simulateBtn.addEventListener('click', () => simulate(updateTn.value));
 
 // Show a shipment's existing updates (with a delete button on each).
 async function loadEvents(tn) {
@@ -161,7 +238,8 @@ async function loadEvents(tn) {
     return;
   }
   const pkg = await res.json();
-  // Keep original array index (used for deletion), display newest first.
+  managedPkg = pkg;
+  // Keep original array index (used for edit/delete), display newest first.
   const events = pkg.events
     .map((e, i) => ({ ...e, _i: i }))
     .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
@@ -178,17 +256,42 @@ async function loadEvents(tn) {
             <span class="ev-meta">${esc(fmt(e.timestamp))}${e.location ? ' · ' + esc(e.location) : ''}</span>
             ${e.note ? `<span class="ev-note">${esc(e.note)}</span>` : ''}
           </div>
-          <button class="ev-del" title="Delete this update"
-            data-del-ev="${e._i}" data-tn="${esc(pkg.trackingNumber)}"
-            ${events.length <= 1 ? 'disabled' : ''}>Delete</button>
+          <span class="ev-actions">
+            <button class="ev-edit" title="Edit this update"
+              data-edit-ev="${e._i}" data-tn="${esc(pkg.trackingNumber)}">Edit</button>
+            <button class="ev-del" title="Delete this update"
+              data-del-ev="${e._i}" data-tn="${esc(pkg.trackingNumber)}"
+              ${events.length <= 1 ? 'disabled' : ''}>Delete</button>
+          </span>
         </li>`
         )
         .join('')}
     </ul>`;
 }
 
-// Delete a single update.
+// Load an existing event into the form for editing.
+function startEdit(tn, index) {
+  if (!managedPkg || managedPkg.trackingNumber !== tn) return;
+  const ev = managedPkg.events[index];
+  if (!ev) return;
+  updateTn.value = tn;
+  updateStatusSel.value = ev.status;
+  updateForm.querySelector('[name="location"]').value = ev.location || '';
+  updateForm.querySelector('[name="note"]').value = ev.note || '';
+  updateTime.value = toLocalInput(ev.timestamp);
+  editIndex = index;
+  updateSubmit.textContent = 'Save changes';
+  editCancel.hidden = false;
+  updateForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Manage-list actions: edit or delete a single update.
 eventsManage.addEventListener('click', async (e) => {
+  const editBtn = e.target.closest('button[data-edit-ev]');
+  if (editBtn) {
+    startEdit(editBtn.dataset.tn, Number.parseInt(editBtn.dataset.editEv, 10));
+    return;
+  }
   const btn = e.target.closest('button[data-del-ev]');
   if (!btn) return;
   const tn = btn.dataset.tn;
@@ -211,7 +314,10 @@ eventsManage.addEventListener('click', async (e) => {
 });
 
 // Auto-load a shipment's updates when the tracking number field changes.
-updateTn.addEventListener('change', () => loadEvents(updateTn.value));
+updateTn.addEventListener('change', () => {
+  if (editIndex !== null) exitEditMode();
+  loadEvents(updateTn.value);
+});
 
 // List + actions
 async function loadList() {
@@ -230,6 +336,7 @@ async function loadList() {
         <span class="li-actions">
           <button data-track="${esc(p.trackingNumber)}" class="ghost">View</button>
           <button data-use="${esc(p.trackingNumber)}" class="ghost">Update</button>
+          <button data-sim="${esc(p.trackingNumber)}" class="ghost">Simulate</button>
           <button data-del="${esc(p.trackingNumber)}" class="danger">Delete</button>
         </span>
       </div>`
@@ -245,8 +352,11 @@ listEl.addEventListener('click', async (e) => {
     openTracking(btn.dataset.track);
   } else if (btn.dataset.use) {
     updateTn.value = btn.dataset.use;
+    exitEditMode();
     loadEvents(btn.dataset.use);
     updateForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } else if (btn.dataset.sim) {
+    simulate(btn.dataset.sim);
   } else if (btn.dataset.del) {
     if (!confirm(`Delete ${btn.dataset.del}?`)) return;
     await fetch(`/api/packages/${encodeURIComponent(btn.dataset.del)}`, {
@@ -258,4 +368,5 @@ listEl.addEventListener('click', async (e) => {
 
 document.getElementById('refresh-btn').addEventListener('click', loadList);
 
+updateTime.value = toLocalInput(); // default the date/time to now
 loadMeta().then(loadList);

@@ -174,8 +174,13 @@ export async function addEvent(trackingNumber, update = {}) {
     note: update.note || '',
     timestamp: ts,
   });
-  pkg.status = status;
-  pkg.updatedAt = ts;
+  // Current status reflects the newest event by time (so a backdated add
+  // doesn't clobber a more recent status).
+  const newest = [...pkg.events].sort((a, b) =>
+    (b.timestamp || '').localeCompare(a.timestamp || '')
+  )[0];
+  pkg.status = newest.status;
+  pkg.updatedAt = newest.timestamp;
   if (update.estimatedDelivery) pkg.estimatedDelivery = update.estimatedDelivery;
 
   db[key] = pkg;
@@ -214,6 +219,86 @@ export async function deleteEvent(trackingNumber, index) {
   )[0];
   pkg.status = newest.status;
   pkg.updatedAt = newest.timestamp;
+
+  db[key] = pkg;
+  await persist();
+  return pkg;
+}
+
+// Edit an existing event (status / location / note / timestamp) by index, then
+// recompute the shipment's current status from the newest remaining event.
+export async function updateEvent(trackingNumber, index, patch = {}) {
+  const db = await load();
+  const key = String(trackingNumber).toUpperCase();
+  const pkg = db[key];
+  if (!pkg) {
+    const err = new Error('Shipment not found.');
+    err.status = 404;
+    throw err;
+  }
+  if (!Number.isInteger(index) || index < 0 || index >= pkg.events.length) {
+    const err = new Error('Invalid update.');
+    err.status = 400;
+    throw err;
+  }
+
+  const ev = pkg.events[index];
+  if (patch.status !== undefined && STATUSES.includes(patch.status)) ev.status = patch.status;
+  if (patch.location !== undefined) ev.location = patch.location;
+  if (patch.note !== undefined) ev.note = patch.note;
+  if (patch.timestamp) ev.timestamp = patch.timestamp;
+
+  const newest = [...pkg.events].sort((a, b) =>
+    (b.timestamp || '').localeCompare(a.timestamp || '')
+  )[0];
+  pkg.status = newest.status;
+  pkg.updatedAt = newest.timestamp;
+
+  db[key] = pkg;
+  await persist();
+  return pkg;
+}
+
+// Replace a shipment's history with a full, realistic simulated journey that
+// ends "Delivered". Locations come from the shipment's own origin/destination.
+export async function simulateDelivery(trackingNumber) {
+  const db = await load();
+  const key = String(trackingNumber).toUpperCase();
+  const pkg = db[key];
+  if (!pkg) {
+    const err = new Error('Shipment not found.');
+    err.status = 404;
+    throw err;
+  }
+
+  const origin = pkg.origin || 'Origin facility';
+  const dest = pkg.destination || 'Destination';
+  // Short, readable destination label (first city-ish segment).
+  const destShort = dest.split(',')[0].trim() || dest;
+  const country = (s) => (s.split(',').pop() || '').trim().toLowerCase();
+  const intl = country(origin) && country(dest) && country(origin) !== country(dest);
+  const ago = (h) => new Date(Date.now() - h * 3600 * 1000).toISOString();
+
+  const journey = [
+    { status: 'Label Created', location: origin, note: 'Shipment information received.', h: 132 },
+    { status: 'Picked Up', location: origin, note: 'Picked up by courier.', h: 120 },
+    { status: 'In Transit', location: origin, note: 'Departed origin facility.', h: 104 },
+    { status: 'Arrived at Facility', location: destShort, note: 'Arrived at destination facility.', h: 56 },
+  ];
+  if (intl) {
+    journey.push({ status: 'Customs Clearance', location: destShort, note: 'Import customs clearance completed.', h: 40 });
+  }
+  journey.push({ status: 'Out for Delivery', location: destShort, note: 'Out for delivery.', h: 8 });
+  journey.push({ status: 'Delivered', location: destShort, note: 'Delivered to recipient.', h: 1 });
+
+  pkg.events = journey.map((j) => ({
+    status: j.status,
+    location: j.location,
+    note: j.note,
+    timestamp: ago(j.h),
+  }));
+  pkg.status = 'Delivered';
+  pkg.updatedAt = pkg.events[pkg.events.length - 1].timestamp;
 
   db[key] = pkg;
   await persist();

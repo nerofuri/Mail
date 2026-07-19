@@ -138,12 +138,22 @@
               <input type="text" name="note" placeholder="Optional detail" />
             </label>
 
-            <label>
-              Update est. delivery (optional)
-              <input type="date" name="estimatedDelivery" />
-            </label>
+            <div class="row">
+              <label>
+                Date &amp; time
+                <input type="datetime-local" name="timestamp" id="update-time" />
+              </label>
+              <label>
+                Update est. delivery (optional)
+                <input type="date" name="estimatedDelivery" />
+              </label>
+            </div>
 
-            <button type="submit">Add update</button>
+            <div class="form-actions">
+              <button type="submit" id="update-submit">Add update</button>
+              <button type="button" id="edit-cancel" class="ghost" hidden>Cancel</button>
+              <button type="button" id="simulate-btn" class="ghost">Simulate delivery</button>
+            </div>
             <p class="form-msg" id="update-msg"></p>
           </form>
 
