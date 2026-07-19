@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/css/styles.css" />
   </head>
   <body>
+    <div class="bg-glow" aria-hidden="true"></div>
+
     <header class="site-header">
       <div class="container header-inner">
         <a class="brand" href="/">
@@ -19,7 +21,7 @@
           <span class="brand-name">Track<b>Wave</b></span>
         </a>
         <nav class="nav">
-          <a href="/">Track</a>
+          <a href="/" class="active">Track</a>
           <a href="/admin.html">Admin</a>
         </nav>
       </div>
@@ -27,34 +29,89 @@
 
     <main>
       <section class="hero">
-        <div class="container">
-          <p class="eyebrow">Multi-carrier tracking</p>
-          <h1>Track your package, anywhere in the world</h1>
+        <div class="container hero-inner">
+          <p class="eyebrow"><span class="pulse-dot"></span> Multi-carrier tracking</p>
+          <h1>Track your package,<br /><span class="grad-text">anywhere in the world</span></h1>
           <p class="lede">
-            One place to follow shipments from FedEx, UPS, USPS, Amazon,
-            AliExpress, eBay and more.
+            Follow shipments from DHL, FedEx, UPS, USPS, Amazon, AliExpress, eBay
+            and more — one search, live status, full history.
           </p>
 
           <form id="track-form" class="track-form" autocomplete="off">
-            <input
-              id="track-input"
-              type="text"
-              name="trackingNumber"
-              placeholder="Enter a tracking number"
-              aria-label="Tracking number"
-              required
-            />
-            <button type="submit">Track</button>
+            <div class="input-wrap">
+              <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M3.3 7l8.7 5 8.7-5M12 22V12" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+              <input
+                id="track-input"
+                type="text"
+                name="trackingNumber"
+                placeholder="Enter a tracking number"
+                aria-label="Tracking number"
+                required
+              />
+            </div>
+            <button type="submit" id="track-btn">
+              <span class="btn-label">Track</span>
+              <span class="btn-spinner" aria-hidden="true"></span>
+            </button>
           </form>
+
           <p class="hint" id="hint">
-            No number yet? Head to the
-            <a href="/admin.html">Admin panel</a> to create a test shipment.
+            Try a sample:
+            <button type="button" class="sample-chip" data-tn="2707796596">
+              2707796596
+            </button>
+            or create one in the <a href="/admin.html">Admin panel</a>.
           </p>
         </div>
       </section>
 
       <section class="container result-wrap">
         <div id="result" class="result" hidden></div>
+      </section>
+
+      <!-- Landing content (hidden once a result is shown) -->
+      <section class="container extras" id="extras">
+        <div class="carriers">
+          <span class="carriers-label">Works with</span>
+          <div class="carrier-pills">
+            <span class="pill">DHL</span>
+            <span class="pill">FedEx</span>
+            <span class="pill">UPS</span>
+            <span class="pill">USPS</span>
+            <span class="pill">Amazon</span>
+            <span class="pill">AliExpress</span>
+            <span class="pill">eBay</span>
+            <span class="pill">Royal Mail</span>
+            <span class="pill">China Post</span>
+          </div>
+        </div>
+
+        <div class="features">
+          <div class="feature">
+            <div class="feature-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+            </div>
+            <h3>Live status</h3>
+            <p>See where a parcel is right now, with a full event history and ETA.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.5 2.5 3.5 6 3.5 9s-1 6.5-3.5 9C9.5 18.5 8.5 15 8.5 12S9.5 5.5 12 3z" stroke="currentColor" stroke-width="1.6"/></svg>
+            </div>
+            <h3>Worldwide carriers</h3>
+            <p>DHL, FedEx, Amazon, AliExpress and more — one place for all of them.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 7h16v13H4zM4 7l2-3h12l2 3M9 12h6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </div>
+            <h3>One tracking number</h3>
+            <p>Paste any supported number and get a clean, readable delivery journey.</p>
+          </div>
+        </div>
       </section>
     </main>
 
