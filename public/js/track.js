@@ -9,6 +9,7 @@ const STEP_LABELS = ['Shipped', 'In Transit', 'Arriving', 'Delivered'];
 const STAGE = {
   'Label generated': { step: 0, pct: 8 },
   'Awaiting flight': { step: 0, pct: 30 },
+  'Held at customs': { step: 1, pct: 62 },
   'Label Created': { step: 0, pct: 8 },
   'Picked Up': { step: 0, pct: 22 },
   'In Transit': { step: 1, pct: 45 },

@@ -14,11 +14,12 @@ export async function seedAtlantaJapan() {
 
   const labelTs = '2026-07-17T12:00:00.000Z';
   const flightTs = '2026-07-19T12:00:00.000Z';
+  const customsTs = '2026-07-23T12:00:00.000Z';
 
   const pkg = {
     trackingNumber: DEMO_TN,
     carrier: 'DHL',
-    status: 'Awaiting flight',
+    status: 'Held at customs',
     description: 'International parcel',
     origin: 'Atlanta, GA, USA',
     destination:
@@ -26,7 +27,7 @@ export async function seedAtlantaJapan() {
     recipient: 'Konomi Fujimoto (Hold for Pickup)',
     estimatedDelivery: '2026-07-30',
     createdAt: labelTs,
-    updatedAt: flightTs,
+    updatedAt: customsTs,
     events: [
       {
         status: 'Label generated',
@@ -39,6 +40,12 @@ export async function seedAtlantaJapan() {
         location: 'Atlanta, GA, USA',
         note: 'Awaiting flight departure.',
         timestamp: flightTs,
+      },
+      {
+        status: 'Held at customs',
+        location: 'Tokyo, JP',
+        note: 'Parcel held at Japanese customs for clearance.',
+        timestamp: customsTs,
       },
     ],
   };
