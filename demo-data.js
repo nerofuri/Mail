@@ -15,19 +15,20 @@ export async function seedAtlantaJapan() {
   const labelTs = '2026-07-17T12:00:00.000Z';
   const flightTs = '2026-07-19T12:00:00.000Z';
   const customsTs = '2026-07-23T12:00:00.000Z';
+  const clearedTs = '2026-07-24T12:00:00.000Z';
 
   const pkg = {
     trackingNumber: DEMO_TN,
     carrier: 'DHL',
-    status: 'Held at customs',
+    status: 'Customs cleared',
     description: 'International parcel',
     origin: 'Atlanta, GA, USA',
     destination:
       'YAMATO TRANSPORT – Tomakomai Ariake Center, 2-10-10 Ariakecho, Tomakomai, Hokkaido 053-0812, Japan',
     recipient: 'Konomi Fujimoto (Hold for Pickup)',
-    estimatedDelivery: '2026-07-30',
+    estimatedDelivery: '2026-08-12',
     createdAt: labelTs,
-    updatedAt: customsTs,
+    updatedAt: clearedTs,
     events: [
       {
         status: 'Label generated',
@@ -46,6 +47,12 @@ export async function seedAtlantaJapan() {
         location: 'Tokyo, JP',
         note: 'Parcel held at Japanese customs for clearance.',
         timestamp: customsTs,
+      },
+      {
+        status: 'Customs cleared',
+        location: 'Tokyo, JP',
+        note: 'Customs clearance completed.',
+        timestamp: clearedTs,
       },
     ],
   };
