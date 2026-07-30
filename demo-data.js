@@ -15,7 +15,7 @@ export async function seedAtlantaJapan() {
   const labelTs = '2026-07-17T12:00:00.000Z';
   const flightTs = '2026-07-19T12:00:00.000Z';
   const customsTs = '2026-07-23T12:00:00.000Z';
-  const clearedTs = '2026-07-24T12:00:00.000Z';
+  const clearedTs = '2026-07-28T12:00:00.000Z';
 
   const pkg = {
     trackingNumber: DEMO_TN,
