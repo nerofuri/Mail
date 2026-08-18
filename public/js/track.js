@@ -11,6 +11,7 @@ const STAGE = {
   'Awaiting flight': { step: 0, pct: 30 },
   'Held at customs': { step: 1, pct: 62 },
   'Customs cleared': { step: 2, pct: 72 },
+  'Picked up': { step: 3, pct: 100 },
   'Label Created': { step: 0, pct: 8 },
   'Picked Up': { step: 0, pct: 22 },
   'In Transit': { step: 1, pct: 45 },
@@ -24,7 +25,8 @@ const STAGE = {
 
 const statusClass = (status) => {
   const s = status.toLowerCase();
-  if (s.includes('delivered')) return 'delivered';
+  if (s.includes('delivered') || s.includes('picked up') || s.includes('collected'))
+    return 'delivered';
   if (s.includes('exception')) return 'exception';
   if (s.includes('returned')) return 'returned';
   if (s.includes('customs')) return 'customs';
